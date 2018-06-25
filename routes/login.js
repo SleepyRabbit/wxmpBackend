@@ -1,8 +1,8 @@
 var express = require('express');
 var router = express.Router();
-var request = require('request')
-var session = require('express-session');
-var redisStore = require('connect-redis')(session);
+var request = require('request');
+var client = require('../common/common');
+var crypto = require('crypto');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -20,6 +20,7 @@ router.post('/', function(req, res, next) {
         '&js_code=' + req.body.code +
         '&grant_type=authorization_code';
 
+    // 请求获取session_key和openid。
     var options = {
         url: url,
         method: 'POST',
@@ -28,14 +29,45 @@ router.post('/', function(req, res, next) {
     request(url, (err, respond, body) => {
         var data = {
             err: err,
-            data: {},
+            session: "",
         }
         // console.log(err);
+        // 将获取session_key和openid后不要返回给小程序，而是生成一个3rd_session返回给小程序，并将它们按照key、value的形式存储到redis中。
         if(!err && respond.statusCode == 200) {
-            // console.log(body);
-            data.data = body;
+            //生成3rd_session
+            crypto.randomBytes(16, (err, buf) => {
+                if(!err) {
+                    data.session = buf.toString('hex');
+                    console.log(data);
+
+                    // 将session作为key，session_key和openid字符串化后作为value存储到redis中
+                    client.set(data.session, body, (err, response) => {
+                        // console.log(err, res);
+                        if(!err) {
+                            console.log("Session save to redis successful!");
+                            res.send(data);
+                        }
+                        else {
+                            console.log("Session save to redis failed!")
+                        }
+                    });
+                    client.get(data.session, (err, response) => {
+                        if(!err) {
+                            console.log(data);
+                        }
+                    })
+                    // Send session to Mini Program
+                    // res.send(data);
+                }
+                else {
+                    console.log("Session generate failed!");
+                }
+            });
         }
-        res.send(data);
+        // 请求失败
+        else {
+            console.log("Get session_key and openid failed!");
+        }
     })
 });
 
