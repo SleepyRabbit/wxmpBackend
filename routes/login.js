@@ -39,6 +39,7 @@ router.post('/', function(req, res, next) {
                 if(!err) {
                     data.session = buf.toString('hex');
                     console.log(data);
+                    console.log(body);
 
                     // 将session作为key，session_key和openid字符串化后作为value存储到redis中
                     client.set(data.session, body, (err, response) => {
@@ -51,11 +52,11 @@ router.post('/', function(req, res, next) {
                             console.log("Session save to redis failed!")
                         }
                     });
-                    client.get(data.session, (err, response) => {
-                        if(!err) {
-                            console.log(data);
-                        }
-                    })
+                    // client.get(data.session, (err, response) => {
+                    //     if(!err) {
+                    //         console.log(data);
+                    //     }
+                    // })
                     // Send session to Mini Program
                     // res.send(data);
                 }
