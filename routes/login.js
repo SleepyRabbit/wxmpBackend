@@ -3,6 +3,7 @@ var router = express.Router();
 var request = require('request');
 var client = require('../common/common');
 var crypto = require('crypto');
+var config = require('../common/config');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -11,8 +12,8 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
 
-    var appid = "wxd9dd7a39008b6d48";
-    var appsecret = "305fb1d59364309f40713d74cc6a7e0c";
+    var appid = config.miniProgram.appid;
+    var appsecret = config.miniProgram.appsecret;
 
     var url ='https://api.weixin.qq.com/sns/jscode2session'
         + '?appid=' + appid +
@@ -39,25 +40,21 @@ router.post('/', function(req, res, next) {
                 if(!err) {
                     data.session = buf.toString('hex');
                     console.log(data);
+                    console.log(body);
 
                     // 将session作为key，session_key和openid字符串化后作为value存储到redis中
                     client.set(data.session, body, (err, response) => {
-                        // console.log(err, res);
-                        if(!err) {
+                            if(!err) {
                             console.log("Session save to redis successful!");
+                            // 设置session失效时间，seconds
+                            client.expire(data.session, 20);
+                            // 将生成的session发送给小程序
                             res.send(data);
                         }
                         else {
                             console.log("Session save to redis failed!")
                         }
                     });
-                    client.get(data.session, (err, response) => {
-                        if(!err) {
-                            console.log(data);
-                        }
-                    })
-                    // Send session to Mini Program
-                    // res.send(data);
                 }
                 else {
                     console.log("Session generate failed!");
