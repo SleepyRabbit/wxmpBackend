@@ -55,6 +55,14 @@ router.post('/', function(req, res, next) {
                             console.log("Session save to redis failed!")
                         }
                     });
+
+                    // client.get(data.session, (err, response) => {
+                    //     if(!err) {
+                    //         console.log(data);
+                    //     }
+                    // })
+                    // Send session to Mini Program
+                    // res.send(data);
                 }
                 else {
                     console.log("Session generate failed!");
